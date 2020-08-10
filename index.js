@@ -475,6 +475,7 @@ document.querySelector('#colorButton').addEventListener('mousedown',(e) => {
 })
 
 function shapesClick(e){
+    console.log(e.target)
     if (viewState === 'live' && !e.target.className.baseVal.includes('selected')){
         document.querySelector('#shapes').childNodes.forEach(v => v.classList && v.classList.remove('selected'))
         e.target.classList.add('selected')
@@ -488,16 +489,16 @@ document.querySelector('#sphere').addEventListener('click', shapesClick)
 document.querySelector('#cube').addEventListener('click', shapesClick)
 
 document.querySelector('#sphere').addEventListener('mouseover', e => {
-    if (!document.querySelector('#sphere').className.includes('selected')){
+    if (!document.querySelector('#sphere').getAttribute('className')?.includes('selected')){
         document.querySelector('#selector').style.top = 'calc(20% + 25px)'
         document.querySelector('#selector').style.right = '-2%'
     }
     
 })
 document.querySelector('#cube').addEventListener('mouseover', e => {
-    if (!document.querySelector('#cube').className.includes('selected')){
+    if (!document.querySelector('#cube').getAttribute('className')?.includes('selected')){
         document.querySelector('#selector').style.top = 'calc(30% + 25px)'
-        ocument.querySelector('#selector').style.right = '-2%'
+        document.querySelector('#selector').style.right = '-2%'
     }
 })
 
