@@ -30,16 +30,18 @@ div.container {
     left: 50%;
     top: 110%;
     opacity: 0;
+    pointer-events: none;
 }
-img{
+#shadow{
     position: fixed;
     z-index: 5;
     -webkit-transform: translate(-50%,-50%);
-    width: 500px;
-    height: 250px;
+    width: 30vw;
+    height: 15vw;
     left: 50%;
     top: 70%;
-    opacity: .35;
+    opacity: 0;
+    pointer-events: none;
 }
 div{
     background-color: rgb(85,185,255);
@@ -63,4 +65,49 @@ div{
     width: calc(100vw + 10px);
     height: calc(100vh + 10px);
     background-color: rgba(0,0,0,0);
+}
+#annotation{
+    position: fixed;
+    -webkit-transform: translate(-50%,-50%);
+    left: 50vw;
+    top: 10vh;
+    color: rgba(255,255,255,0);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 2rem;
+}
+#shapes svg{
+    position: fixed;
+    z-index: 5;
+    right: -70px;
+    width: 50px;
+    height: 50px;
+    fill: none;
+    stroke: rgb(180,180,180);
+    stroke-width: 5;
+}
+#shapes svg:hover{
+    stroke-width: 12;
+}
+#shapes svg.selected{
+    stroke: white;
+    stroke-width: 12;
+}
+#sphere{
+    top: 20%;
+}
+#cube{
+    top: 30%;
+}
+#selector{
+    position: fixed;
+    z-index: 3;
+    right: -10%;
+    width: 7%;
+    height: 50px;
+    opacity: .3;
+    fill: rgb(255,255,255);
+    stroke: rgb(255,255,255);
+    -webkit-transform: translate(0, -50%);
+    top: calc(20% + 25px);
+    pointer-events: none;
 }

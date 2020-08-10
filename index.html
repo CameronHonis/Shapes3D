@@ -6,13 +6,35 @@
     <title>Sphere</title>
     <link href="index.css" rel="stylesheet" type="text/css">
     <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.4.0/gsap.min.js' defer></script>
-    <script src='index.js' defer></script>
+    <script type='module' src='index.js' defer></script>
 </head>
-<body>
+<body oncontextmenu='return false;'>
     <div class='container'></div>
-    <div id='colorButton' class='hidden'></div>
-    <div id='colorSlider' class='hidden'></div>
-    <img src='images/Shadow.png' class='noselect' draggable=false>
+    <div id='shapes' class='noselect'>
+        <svg id='sphere' class='noselect selected' draggable=false viewBox="0 0 135.47 135.47" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <ellipse transform="matrix(1 -.001194 .0012616 1 0 0)" cx="67.031" cy="67.288" rx="58.949" ry="57.752"/>
+        </svg>
+        <svg id='cube' class='noselect' draggable=false viewBox="0 0 135.47 135.47" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <g>
+             <path d="m11.161 25.013 56.872 22.996 56.748-22.996-59.226-19.994z"/>
+             <path d="m63.929 53.853-56.872-22.996-0.24251 69.487 56.872 28.995z"/>
+             <path d="m72.847 53.574 56.748-22.996 0.24199 69.488-56.748 28.995z"/>
+            </g>
+        </svg>
+         
+    </div>
+    <svg id='selector' class='noselect' draggable=false viewBox="0 0 135.47 135.47" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+        <defs>
+            <filter id="filter1184" x="-.43179" y="-.4054" width="1.8636" height="1.8108" color-interpolation-filters="sRGB">
+            <feGaussianBlur stdDeviation="13.056489"/>
+            </filter>
+        </defs>
+        <path d="m105.83 29.482-72.571 40.254 72.382 37.042z" filter="url(#filter1184)"/>
+    </svg> 
+    <div id='colorButton' class='hidden' draggable=false></div>
+    <div id='colorSlider' class='hidden' draggable=false></div>
+    <img src='images/Shadow.png' id='shadow' class='noselect' draggable=false>
+    <p id='annotation'>Annotation</p>
     <!--<div id='overlay'></div> -->
 </body>
 </html>

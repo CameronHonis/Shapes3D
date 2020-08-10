@@ -1,5 +1,42 @@
 let screenWidth;
 let screenHeight;
+let radiusMult = 150
+let shapeRotation = [[1,0,0],[0,1,0],[0,0,1]]
+let dots = []
+const meshes = {
+    sphere: [],
+    cube: [
+        [[.57,.57,.57],[-.57,.57,.57],[.57,.57,-.57]],//top
+        [[-.57,.57,-.57],[-.57,.57,.57],[.57,.57,-.57]],
+        [[.57,-.57,.57],[-.57,-.57,.57],[.57,-.57,-.57]],//bottom
+        [[-.57,-.57,-.57],[.57,-.57,-.57],[-.57,-.57,.57]],
+        [[.57,.57,.57],[.57,.57,-.57],[.57,-.57,.57]], //rel right
+        [[.57,-.57,-.57],[.57,-.57,.57],[.57,.57,-.57]],
+        [[-.57,.57,.57],[-.57,-.57,.57],[-.57,.57,-.57]],//rel left
+        [[-.57,-.57,-.57],[-.57,.57,-.57],[-.57,-.57,.57]],
+        [[.57,.57,.57],[-.57,.57,.57],[.57,-.57,.57]],//front
+        [[-.57,-.57,.57],[.57,-.57,.57],[-.57,.57,.57]],
+        [[.57,.57,-.57],[-.57,.57,-.57],[.57,-.57,-.57]],//back
+        [[-.57,-.57,-.57],[.57,-.57,-.57],[-.57,.57,-.57]]
+    ],
+    pyramid: [
+        [[1,.1,1],[-1,.1,1],[1,.1,-1]],
+        [[-1,.1,-1],[1,.1,-1],[-1,.1,1]],
+        //[[.57,-.57,.57],[-.57,-.57,.57],[.57,-.57,-.57]],//bottom
+        //[[-.57,-.57,-.57],[.57,-.57,-.57],[-.57,-.57,.57]],
+        //[[.57,-.57,.57],[-.57,-.57,.57],[.57,1.2,-.57]],
+        //[[-.57,1.2,-.57],[.57,1.2,-.57],[.57,-.57,.57]]
+        //[[.57,-.57,.57],[.57,-.57,-.57],[0,.57,0]]
+        [[.57,-.57,.57],[.57,-.57,0],[0,.57,0]],//right
+        [[.57,-.57,-.57],[.57,-.57,0],[0,.57,0]],
+        [[-.57,-.57,.57],[-.57,-.57,0],[0,.57,0]],//left
+        [[-.57,-.57,-.57],[-.57,-.57,0],[0,.57,0]],
+        [[.57,-.57,.57],[0,-.57,.57],[0,.57,0]],//front
+        [[-.57,-.57,.57],[0,-.57,.57],[0,.57,0]],
+        [[.57,-.57,-.57],[0,-.57,-.57],[0,.57,0]],//back
+        [[-.57,-.57,-.57],[0,-.57,-.57],[0,.57,0]],
+    ],
+}
 function calculateWindowSize(){
     screenWidth = Math.max(
         document.body.scrollWidth,
@@ -19,14 +56,6 @@ function calculateWindowSize(){
 }
 calculateWindowSize()
 window.onresize = calculateWindowSize
-let sphere = []
-let sphereRot = [0,0]
-let sphereCenter = [screenWidth/2,screenHeight/2]
-let sphereRadius = 150
-let dots = []
-const rot = [0,0]
-let center = [screenWidth/2,screenHeight/2]
-let radiusMult = 150
 function LineLineIntersection(line1,line2){ //lines are arrays. first index = origin, second = slope
 
 }
@@ -40,6 +69,45 @@ function DeepCopy(obj){
     }
     return returnObj
 }
+let resetTime
+function ResetDots(shapeData){
+    //shapeData is an array of triangles* that signifies the faces of the shape
+    //*triangles are arrays of 3 vector R3s describing the triangles vertices
+    //if no shapeData is provided, shape is assumed to be a sphere
+    dots.forEach(v => v[1].remove())
+    dots = []
+    viewState = 'transistion'
+    gsap.fromTo('#shadow',{opacity: 0},{duration: 5,opacity: .35})
+    setTimeout(() => {
+        viewState = 'live'
+    },5000)
+    resetTime = Date.now()/1000
+    for (let i = 0; i < 200; i++){
+        const dot = document.createElement('div')
+        document.body.appendChild(dot)
+        dot.style.position = 'absolute'
+        dot.style.left = screenWidth*Math.random()+'px'
+        dot.style.top = screenHeight*Math.random()+'px'
+        dot.style.pointerEvents = 'none'
+        dot.draggable = false
+        const theta = Math.random()*Math.PI*2 //x-axis rot
+        const phi = Math.random()*Math.PI*2 //rel (from x-axis rot) z-axis rot
+        const thetaVector = [Math.cos(theta),0,-Math.sin(theta)]
+        const relZAxis = [Math.cos(theta-Math.PI/2),0,-Math.sin(theta-Math.PI/2)]
+        const ray = Rodrigues(thetaVector,relZAxis,phi)
+        let closestInt = 1
+        if (shapeData){
+            shapeData.forEach(tri => {
+                const intReturn = LineTriangleIntersection([0,0,0],ray,tri)
+                if (intReturn && intReturn[1] < closestInt){
+                    closestInt = intReturn[1]
+                }
+            })
+        }
+        dots.push([[closestInt*ray[0],closestInt*ray[1],closestInt*ray[2]],dot])
+    }
+}
+
 function LineTriangleIntersection(vectorStart,vectorEnd,triangle){
     const triangle01 = [triangle[1][0]-triangle[0][0],triangle[1][1]-triangle[0][1],triangle[1][2]-triangle[0][2]]
     const triangle02 = [triangle[2][0]-triangle[0][0],triangle[2][1]-triangle[0][1],triangle[2][2]-triangle[0][2]]
@@ -87,73 +155,6 @@ function LineTriangleIntersection(vectorStart,vectorEnd,triangle){
     }
     return [intVector,Magnitude([intVector[0]-vectorStart[0],intVector[1]-vectorStart[1],intVector[2]-vectorStart[2]])]
 }
-function ResetDots(shapeData){
-    //shapeData is an array of triangles* that signifies the faces of the shape
-    //*triangles are arrays of 3 vector R3s describing the triangles vertices
-    //if no shapeData is provided, shape is assumed to be a sphere
-    dots.forEach(v => v[1].remove())
-    dots = []
-    for (let i = 0; i < 700; i++){
-        const dot = document.createElement('div')
-        document.body.appendChild(dot)
-        const theta = Math.random()*Math.PI*2 //x-axis rot
-        const phi = Math.random()*Math.PI*2 //rel (from x-axis rot) z-axis rot
-        const thetaVector = [Math.cos(theta),0,-Math.sin(theta)]
-        const relZAxis = [Math.cos(theta-Math.PI/2),0,-Math.sin(theta-Math.PI/2)]
-        const ray = Rodrigues(thetaVector,relZAxis,phi)
-        let closestInt = 1
-        if (shapeData){
-            shapeData.forEach(tri => {
-                const intReturn = LineTriangleIntersection([0,0,0],ray,tri)
-                if (intReturn && intReturn[1] < closestInt){
-                    closestInt = intReturn[1]
-                }
-            })
-        }
-        dots.push([[closestInt*ray[0],closestInt*ray[1],closestInt*ray[2]],dot])
-    }
-}
-//ResetDots() //circle
-ResetDots([ //square
-    [[.57,.57,.57],[-.57,.57,.57],[.57,.57,-.57]],//top
-    [[-.57,.57,-.57],[-.57,.57,.57],[.57,.57,-.57]],
-    [[.57,-.57,.57],[-.57,-.57,.57],[.57,-.57,-.57]],//bottom
-    [[-.57,-.57,-.57],[.57,-.57,-.57],[-.57,-.57,.57]],
-    [[.57,.57,.57],[.57,.57,-.57],[.57,-.57,.57]], //rel right
-    [[.57,-.57,-.57],[.57,-.57,.57],[.57,.57,-.57]],
-    [[-.57,.57,.57],[-.57,-.57,.57],[-.57,.57,-.57]],//rel left
-    [[-.57,-.57,-.57],[-.57,.57,-.57],[-.57,-.57,.57]],
-    [[.57,.57,.57],[-.57,.57,.57],[.57,-.57,.57]],//front
-    [[-.57,-.57,.57],[.57,-.57,.57],[-.57,.57,.57]],
-    [[.57,.57,-.57],[-.57,.57,-.57],[.57,-.57,-.57]],//back
-    [[-.57,-.57,-.57],[.57,-.57,-.57],[-.57,.57,-.57]]
-])
-/*ResetDots([
-    [[1,.1,1],[-1,.1,1],[1,.1,-1]],
-    [[-1,.1,-1],[1,.1,-1],[-1,.1,1]],
-    //[[.57,-.57,.57],[-.57,-.57,.57],[.57,-.57,-.57]],//bottom
-    //[[-.57,-.57,-.57],[.57,-.57,-.57],[-.57,-.57,.57]],
-    //[[.57,-.57,.57],[-.57,-.57,.57],[.57,1.2,-.57]],
-    //[[-.57,1.2,-.57],[.57,1.2,-.57],[.57,-.57,.57]]
-    //[[.57,-.57,.57],[.57,-.57,-.57],[0,.57,0]]
-    /*[[.57,-.57,.57],[.57,-.57,0],[0,.57,0]],//right
-    [[.57,-.57,-.57],[.57,-.57,0],[0,.57,0]],
-    [[-.57,-.57,.57],[-.57,-.57,0],[0,.57,0]],//left
-    [[-.57,-.57,-.57],[-.57,-.57,0],[0,.57,0]],
-    [[.57,-.57,.57],[0,-.57,.57],[0,.57,0]],//front
-    [[-.57,-.57,.57],[0,-.57,.57],[0,.57,0]],
-    [[.57,-.57,-.57],[0,-.57,-.57],[0,.57,0]],//back
-    [[-.57,-.57,-.57],[0,-.57,-.57],[0,.57,0]],
-])*/
-/*for (let i = 0; i < 200; i++){
-    let dot = document.createElement('div')
-    document.body.appendChild(dot)
-    sphere.push([
-        Math.floor(361*Math.random()),
-        Math.floor(361*Math.random()),
-        dot
-    ])
-}*/
 function InverseMatrix(matrix){ //returns the actual inverse of the matrix given or undefined if no possible solution
     if (matrix.length === 2 && matrix[0].length === 2){
         const det = matrix[0][0]*matrix[1][1] - matrix[1][0]*matrix[0][1]
@@ -184,9 +185,9 @@ function InverseMatrix(matrix){ //returns the actual inverse of the matrix given
     return minorsMatrix
 }
 function InvertMatrix(matrix){ //returns a matrix in column-row form from row-column form
-    returnMatrix = []
+    const returnMatrix = []
     for (let c = 0; c < matrix[0].length; c++){
-        colVector = [];
+        const colVector = [];
         for (let r = 0; r < matrix.length; r++){
             colVector.push(matrix[r][c])
         }
@@ -260,6 +261,7 @@ function CrossMatrix(matrix1,matrix2){
     return rMatrix
 }
 function Rodrigues(targetVector,axisVector,theta){
+    theta *= -1
     const part1 = targetVector.map(v => v*Math.cos(theta))
     const part2 = CrossR3(axisVector,targetVector).map(v => v*Math.sin(theta))
     const part3 = axisVector.map(v => v*Dot(axisVector,targetVector)*(1-Math.cos(theta)))
@@ -269,97 +271,127 @@ function Rodrigues(targetVector,axisVector,theta){
         part1[2]+part2[2]+part3[2]
     ]
 }
+function EulerAnglesToMatrix(anglesVector){ //works in ZYX order
+    let returnMatrix = [[1,0,0],[0,1,0],[0,0,1]]
+    returnMatrix = [
+        Rodrigues(returnMatrix[0],returnMatrix[2],anglesVector[2]),
+        Rodrigues(returnMatrix[1],returnMatrix[2],anglesVector[2]),
+        returnMatrix[2]
+    ]
+    returnMatrix = [
+        Rodrigues(returnMatrix[0],returnMatrix[1],anglesVector[1]),
+        returnMatrix[1],
+        Rodrigues(returnMatrix[2],returnMatrix[1],anglesVector[1])
+    ]
+    returnMatrix = [
+        returnMatrix[0],
+        Rodrigues(returnMatrix[1],returnMatrix[0],anglesVector[0]),
+        Rodrigues(returnMatrix[2],returnMatrix[0],anglesVector[0])
+    ]
+    return returnMatrix
+}
+
+let viewState = 'intro'
 let maxDotSize = 6
-function PositionDots(){
-    let relXRot = sphereRot[0]
-    let relYRot = sphereRot[1]
-    while (relXRot >= 360){
-        relXRot -= 360
-    }
-    while (relXRot < 0){
-        relXRot += 360
-    }
-    while (relYRot >= 360){
-        relYRot -= 360
-    }
-    while (relYRot < 0){
-        relYRot += 360
-    }
-    const xyAxis = UnitVector([relXRot,-relYRot,0])
-    const xyMag = .707*Magnitude([relXRot,relYRot])
-    const lookVector = Rodrigues([0,0,1],xyAxis,xyMag*Math.PI/180)
-    const upVector = Rodrigues([0,1,0],xyAxis,xyMag*Math.PI/180)
-    const rightVector = Rodrigues([1,0,0],xyAxis,xyMag*Math.PI/180)
-    const shapeCF = [rightVector,upVector,lookVector]
+function PositionDots(rotation){
+    shapeRotation = CrossMatrix(EulerAnglesToMatrix([rotation[0]*Math.PI/180,rotation[1]*Math.PI/180,0]),shapeRotation)
     dots.forEach(v => {
-        const dotDir = CrossMatrix(shapeCF,[[v[0][0]],[v[0][1]],[v[0][2]]])
+        const dotDir = CrossMatrix(shapeRotation,[[v[0][0]],[v[0][1]],[v[0][2]]])
         const dotPos = dotDir.map(vv => vv*radiusMult)
-        v[1].style.left = String(dotPos[0]+screenWidth/2) + 'px'
-        v[1].style.top = String(-dotPos[1]+screenHeight/2) + 'px'
+        if (viewState === 'transistion'){
+            gsap.to(v[1],{
+                duration: Math.min(1/(Date.now()/1000-resetTime),4.9),
+                left: String(dotPos[0]+screenWidth/2) + 'px',
+                top: String(-dotPos[1]+screenHeight/2 - .05*screenHeight*Math.sin(yOffsetTime) - .05*screenHeight) + 'px'
+            })
+        } else {
+            v[1].style.left = String(dotPos[0]+screenWidth/2) + 'px'
+            v[1].style.top = String(-dotPos[1]+screenHeight/2 - .05*screenHeight*Math.sin(yOffsetTime) - .05*screenHeight) + 'px' 
+        }
         let dotSize = (dotPos[2]+radiusMult)/(2*radiusMult)*maxDotSize/2 + maxDotSize/2
         v[1].style.width = String(dotSize)+'px'
         v[1].style.height = String(dotSize)+'px'
     })
+    document.querySelector('#shadow').style.width = String(300*radiusMult/screenWidth - 70*radiusMult/screenWidth*Math.sin(yOffsetTime)) + 'vw'
+    document.querySelector('#shadow').style.height = String(150*radiusMult/screenWidth - 35*radiusMult/screenWidth*Math.sin(yOffsetTime)) + 'vw'
+    document.querySelector('#shadow').style.top = String(70 + 30*2*radiusMult/screenHeight) + '%'
 }
+setTimeout(() => {
+    ResetDots([])
+},2000)
+setTimeout(() => {
+    LoopAnnotations(0)
+},7000)
 let rotSpeed = [0,0]
 let targetRotSpeed = [36,36]
 let correctionAccel = 500
-let lastRenderedMousePos = null
-let timeInterval = .025 //inverse of render framerate
+let yOffsetTime = 0
+let timeInterval = 25 //interval period in ms
 setInterval(() => {
-    if (!mouseDown){
-        if (Math.abs(rotSpeed[0]-targetRotSpeed[0]) <= correctionAccel*timeInterval){
+    if (!mouseDown[0] || colorButtonDown || viewState === 'transistion' && viewState !== 'intro'){
+        if (Math.abs(rotSpeed[0]-targetRotSpeed[0]) <= correctionAccel*timeInterval/1000){
             rotSpeed[0] = targetRotSpeed[0]
         } else {
-            rotSpeed[0] += Math.sign(targetRotSpeed[0]-rotSpeed[0])*correctionAccel*timeInterval
+            rotSpeed[0] += Math.sign(targetRotSpeed[0]-rotSpeed[0])*correctionAccel*timeInterval/1000
         }
-        if (Math.abs(rotSpeed[1]-targetRotSpeed[1]) <= correctionAccel*timeInterval){
+        if (Math.abs(rotSpeed[1]-targetRotSpeed[1]) <= correctionAccel*timeInterval/1000){
             rotSpeed[1] = targetRotSpeed[1]
         } else {
-            rotSpeed[1] += Math.sign(targetRotSpeed[1]-rotSpeed[1])*correctionAccel*timeInterval
+            rotSpeed[1] += Math.sign(targetRotSpeed[1]-rotSpeed[1])*correctionAccel*timeInterval/1000
         }
-        sphereRot[0] += rotSpeed[0]*timeInterval
-        sphereRot[1] += rotSpeed[1]*timeInterval
-    } else { //mouse down
-        sphereRot[1] = sphereRotDownLock[1] - .2*(mousePos[0] - mouseDown[0])
-        //sphereRot[0] = sphereRotDownLock[0] - .2*(mousePos[1] - mouseDown[1])
-        if (lastRenderedMousePos){
-            rotSpeed = [(lastRenderedMousePos[1]-mousePos[1])/timeInterval*.2,
-            (lastRenderedMousePos[0]-mousePos[0])/timeInterval*.2]
+        yOffsetTime += timeInterval/1000
+        const rotMag = Magnitude(rotSpeed)
+        if (rotMag > 1000) {
+            rotSpeed = rotSpeed.map(v => 1000/rotMag*v)
         }
-        lastRenderedMousePos = mousePos
+        PositionDots(rotSpeed.map(v => timeInterval*v/1000))
     }
-    //console.log(rotSpeed[0]+','+rotSpeed[1])
-    PositionDots()
-},timeInterval*1000)
-let mouseDown = false //is an array of xPos,yPos of where mouse was first down
-let sphereRotDownLock; //an array of the rot of the sphere when mouse was first down
+},timeInterval)
+let mouseDown = [false,false,false]
 document.querySelector('.container').addEventListener('mousedown',(e) => {
-    mouseDown = [e.clientX,e.ClientY]
-    sphereRotDownLock = [...sphereRot]
+    mouseDown[e.button] = true
 })
+const annotations = [
+    'Left click drag to rotate shape',
+    'Right click drag to resize shape'
+]
+function LoopAnnotations(annotationIndex){
+    setTimeout(() => {
+        document.querySelector('#annotation').textContent = annotations[annotationIndex]
+        gsap.to('#annotation',{duration: 1, color: 'rgb(255,255,255,1)'})
+    },1000)
+    setTimeout(() => {
+        gsap.to('#annotation',{duration: 1, color: 'rgb(255,255,255,0)'})
+    },5000)
+    setTimeout(() => {
+        annotationIndex++
+        if (annotationIndex > annotations.length - 1){
+            annotationIndex = 0
+        }
+        LoopAnnotations(annotationIndex)
+    },8000)
+}
 
-let mousePos = []
 function mouseUp(e){
-    if (mouseDown){
-        mouseDown = false
-    } else if (colorButtonDown) {
+    mouseDown[e.button] = false
+    lastTime = null
+    if (!mouseDown[0] && colorButtonDown){
         e.stopImmediatePropagation()
         colorButtonDown = false
         document.querySelector('#colorButton').style.cursor = 'auto'
         document.querySelector('#colorSlider').style.cursor = 'auto'
         document.querySelector('.container').style.cursor = 'auto'
-        //document.querySelector('#overlay').style.cursor = 'auto'
     }
 }
 document.querySelector('.container').addEventListener('mouseup',mouseUp)
-document.querySelector('img').addEventListener('mouseup',mouseUp)
 document.querySelector('#colorButton').addEventListener('mouseup',mouseUp)
-document.querySelector('#colorSlider').addEventListener('mouseup',mouseUp)
-//document.querySelector('#overlay').addEventListener('mousemove',mouseMoved)
 
+let mousePos = []
+let lastTime;
 function mouseMoved(e){
-    mousePos = [e.clientX,e.clientY]
+    if (e.clientX <= 0 || e.clientX >= screenWidth || e.clientY <= 0 || e.clientY >= screenHeight-10){
+        mouseDown = [false,false,false]
+    }
     if (e.clientY/screenHeight < .8){
         if (!document.querySelector('#colorButton').className.includes('hidden') && !colorButtonDown){
             document.querySelector('#colorButton').classList.add('hidden')
@@ -367,13 +399,25 @@ function mouseMoved(e){
             gsap.fromTo('#colorButton',{opacity: 1,top: '95%'},{opacity: .5,top: '110%', duration: .33})
             gsap.fromTo('#colorSlider',{opacity: 1,top: '95%'},{opacity: 0,top: '110%', duration: .33})
         }
-        
-    } else {
+    } else if (!mouseDown[0]) {
         if (document.querySelector('#colorButton').className.includes('hidden')){
             document.querySelector('#colorButton').classList.remove('hidden')
             document.querySelector('#colorSlider').classList.remove('hidden')
             gsap.fromTo('#colorButton',{opacity: .5,top: '110%'},{opacity: 1,top: '95%', duration: .33})
             gsap.fromTo('#colorSlider',{opacity: 0,top: '110%'},{opacity: 1,top: '95%', duration: .33})
+        }
+    }
+    if (e.clientX/screenWidth < .8){
+        if (!document.querySelector('#shapes').className.includes('hidden')){
+            document.querySelector('#shapes').classList.add('hidden')
+            gsap.fromTo('#sphere',{right: '4%'},{duration: .33, right: '-70px'})
+            gsap.fromTo('#cube',{right: '4%'},{duration: .33, right: '-70px'})
+        }
+    } else if (!mouseDown[0] && viewState === 'live') {
+        if (document.querySelector('#shapes').className.includes('hidden')){
+            document.querySelector('#shapes').classList.remove('hidden')
+            gsap.fromTo('#sphere',{right: '-70px'},{duration: .33, right: '4%'})
+            gsap.fromTo('#cube',{right: '-70px'},{duration: .33, right: '4%'})
         }
     }
     if (colorButtonDown){
@@ -403,12 +447,25 @@ function mouseMoved(e){
                 v.style['background-color'] = `rgb(${color[0]},${color[1]},${color[2]})`
             }
         })
+    } else if (mouseDown[0] && viewState === 'live'){
+        const t = Date.now()/1000
+        if (!lastTime){
+            lastTime = t
+        }
+        const dt = t - lastTime
+        lastTime = t
+        let mouseDiff = [mousePos[0]-e.clientX,mousePos[1]-e.clientY]
+        rotSpeed = [-10*mouseDiff[1],-10*mouseDiff[0]]
+        PositionDots(rotSpeed.map(v => dt*v))
+    } else if (mouseDown[2] && viewState === 'live'){
+        let mouseDiff = [mousePos[0]-e.clientX,mousePos[1]-e.clientY]
+        let centerMouseVector = [screenWidth/2-e.clientX,screenHeight/2-e.clientY]
+        radiusMult += Dot(mouseDiff,UnitVector(centerMouseVector))/4
     }
+    mousePos = [e.clientX,e.clientY]
 }
 document.querySelector('.container').addEventListener('mousemove',mouseMoved)
-document.querySelector('img').addEventListener('mousemove',mouseMoved)
 document.querySelector('#colorButton').addEventListener('mousemove',mouseMoved)
-document.querySelector('#colorSlider').addEventListener('mousemove',mouseMoved)
 //document.querySelector('#overlay').addEventListener('mousemove',mouseMoved)
 
 let colorButtonDown = false; //false or xPos of where it was first down
@@ -417,7 +474,41 @@ document.querySelector('#colorButton').addEventListener('mousedown',(e) => {
     colorButtonDown = e.clientX
 })
 
+function shapesClick(e){
+    if (viewState === 'live' && !e.target.className.baseVal.includes('selected')){
+        document.querySelector('#shapes').childNodes.forEach(v => v.classList && v.classList.remove('selected'))
+        e.target.classList.add('selected')
+        document.querySelector('#shapes').classList.add('hidden')
+        gsap.fromTo('#sphere',{right: '4%'},{duration: .33, right: '-70px'})
+        gsap.fromTo('#cube',{right: '4%'},{duration: .33, right: '-70px'})
+        ResetDots(meshes[e.target.id])
+    }
+}
+document.querySelector('#sphere').addEventListener('click', shapesClick)
+document.querySelector('#cube').addEventListener('click', shapesClick)
+
+document.querySelector('#sphere').addEventListener('mouseover', e => {
+    if (!document.querySelector('#sphere').className.includes('selected')){
+        document.querySelector('#selector').style.top = 'calc(20% + 25px)'
+        document.querySelector('#selector').style.right = '-2%'
+    }
+    
+})
+document.querySelector('#cube').addEventListener('mouseover', e => {
+    if (!document.querySelector('#cube').className.includes('selected')){
+        document.querySelector('#selector').style.top = 'calc(30% + 25px)'
+        ocument.querySelector('#selector').style.right = '-2%'
+    }
+})
+
+function shapesOut(){
+    document.querySelector('#selector').style.right = '-10%'
+}
+document.querySelector('#sphere').addEventListener('mouseout', shapesOut)
+document.querySelector('#cube').addEventListener('mouseout', shapesOut)
+
 // add/remove dots button w text box
-// color slider
 // annotations
 // right click drag resizes sphere
+// middle click drag changes target velo
+// 4 half opaque dots showing start/end path of middle + right click drags
